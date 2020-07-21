@@ -2,25 +2,7 @@
 #include "profiler.h"
 #include "SPI.h"
 
-#define pinA 2    //The pins that the rotary encoder's A and B terminals are connected to.
-#define pinB 3
-
-//The previous state of the AB pins
-volatile byte  previousReading = 0;
-
-//Keeps track of how much the encoder has been moved
-volatile int rotPosition = 0;
-volatile int lastRotPosition = -1;
-
-volatile byte  aState = 0;
-volatile byte  aLastState = 0;
-
 uint32_t startTime;
-
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef char s8;
-typedef short s16;
 
 #define SLAVESELECT 8
 
