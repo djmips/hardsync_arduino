@@ -5,7 +5,6 @@
 #define pinA 2    //The pins that the rotary encoder's A and B terminals are connected to.
 #define pinB 3
 
-
 //The previous state of the AB pins
 volatile byte  previousReading = 0;
 
@@ -13,35 +12,21 @@ volatile byte  previousReading = 0;
 volatile int rotPosition = 0;
 volatile int lastRotPosition = -1;
 
-
 volatile byte  aState = 0;
 volatile byte  aLastState = 0;
 
 uint32_t startTime;
-
 
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef char s8;
 typedef short s16;
 
-#define SLAVESELECT 7
+#define SLAVESELECT 8
 
-// Exchange one byte over SPI (with wait for completion)
-
-
-// u8 transaction(u8 s) {
-// 	SPDR = s;
-// 	while(!(SPSR & 0x80));
-// 	return SPDR;
-// }
-
-
-//#define digitalReadFast digitalRead
 int RXLED = 17;
 
 void setup() {
-
 
   pinMode(SLAVESELECT, OUTPUT);
   digitalWrite(SLAVESELECT, HIGH);
@@ -58,13 +43,11 @@ void setup() {
   //  2	   1	  0	   1
   //  3	   1	  1	   0
 
-  SPISettings settings(500000, LSBFIRST, SPI_MODE3);
-  SPI.beginTransaction(settings);
-
   // interrupt disabled,spi enabled,lsb 1st,master,clk high when idle,
   // sample on leading edge of clk,system clock/8 rate (500Kbit/S)  
-  //SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR1) | (1 << CPOL) | (1 << CPHA) | (1 << DORD);
-  //SPSR = (1 << SPI2X);
+
+  SPISettings settings(500000, LSBFIRST, SPI_MODE3);
+  SPI.beginTransaction(settings);
 
   // Debug pins and alive blink
   initDebugPin(DEBUG_INTERRUPT_TIME);
@@ -75,7 +58,6 @@ void setup() {
   // initialize the serial communication:
   Serial.begin(9600);
   Serial.println("Start");
- 
 }
 
 byte PS_Data[2];
@@ -112,13 +94,44 @@ void Poll_PSX(byte Big_Motor_Value, boolean Small_Motor_Value)
     PS_Data[PS_DIGI_BUTTONS_1] ^= 255;
 }
 
-void loop() 
+
+void PrintJoystick()
 {
+  uint8_t ps0 = PS_Data[0];
+  uint8_t ps1 = PS_Data[1];  
 
-	//asm("sei");
+  if((ps0 & 0x10)) 
+  {
+    Serial.println("Up");
+  }
+  if((ps0 & 0x40)) 
+  {
+    Serial.println("Down");
+  }
+  if((ps0 & 0x80)) 
+  {
+    Serial.println("Left");
+  }
+  if((ps0 & 0x20)) 
+  {
+    Serial.println("Right");
+  }  
+  if((ps0 & 0x01)) 
+  {
+    Serial.println("Right");
+  }  
+  if((ps0 & 0x08)) 
+  {
+    Serial.println("Right");
+  }  
+  if((ps1 & 0x10)) 
+  {
+    Serial.println("Right");
+  }  
+}
 
-  beginDebugEvent(DEBUG_INTERRUPT_TIME);
-  // alive blink
+void aliveBlink()
+{
   static int ledState = 1;
   uint32_t curTime = millis();
   if ((curTime - startTime ) > 500)
@@ -130,40 +143,32 @@ void loop()
     { digitalWriteFast(RXLED, LOW);}
     startTime = curTime;
   }
+}
 
-  delay(8); // Don't poll the gamepad too often...
+void loop() 
+{
+  beginDebugEvent(DEBUG_INTERRUPT_TIME);
+
+  aliveBlink();
+
   PS_Data[0] = 0;
   PS_Data[1] = 0;
   
   Poll_PSX(0,0);
 
-  if((PS_Data[PS_DIGI_BUTTONS_0] & 0x10)) 
-  {
-    Serial.println("Up");
-    //joybits |= 0x20;	// up
-  }
-  if((PS_Data[PS_DIGI_BUTTONS_0] & 0x40)) 
-  {
-    Serial.println("Down");
-    //joybits |= 0x10;	// down
-  }
-  if((PS_Data[PS_DIGI_BUTTONS_0] & 0x80)) 
-  {
-    Serial.println("Left");
-     //joybits |= 0x08;	// left
-  }
-  if((PS_Data[PS_DIGI_BUTTONS_0] & 0x20)) 
-  {
-    Serial.println("Right");
-    //joybits |= 0x04;	// right
-  }
+  uint8_t ps0 = PS_Data[0];
+  uint8_t ps1 = PS_Data[1];
 
-  // if(!(data4 & 0x01)) joybits |= 0x01;	// select -> fire
-  // if(!(data4 & 0x08)) joybits |= 0x01;	// start -> fire
-
-  // if(!(data5 & 0x10)) joybits |= 0x10;	// triangle -> down
-
-
+  if((ps0 & 0x10)) { digitalWriteFast(7,HIGH); } else { digitalWriteFast(7,LOW); } //up
+  if((ps0 & 0x40)) { digitalWriteFast(6,HIGH); } else { digitalWriteFast(6,LOW); } //down
+  if((ps0 & 0x80)) { digitalWriteFast(5,HIGH); } else { digitalWriteFast(5,LOW); } //left
+  if((ps0 & 0x20)) { digitalWriteFast(4,HIGH); } else { digitalWriteFast(4,LOW); } //right
+  if((ps0 & 0x01)) { digitalWriteFast(3,HIGH); } else { digitalWriteFast(3,LOW); } //select
+  if((ps0 & 0x08)) { digitalWriteFast(3,HIGH); } else { digitalWriteFast(3,LOW); } //start
+  if((ps1 & 0x10)) { digitalWriteFast(7,HIGH); } else { digitalWriteFast(7,LOW); } //triangle 
+  
   endDebugEvent(DEBUG_INTERRUPT_TIME);
+
+  delay(8); // Don't poll the gamepad too often...
 
 }
